@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Prompt Studio
 
-## Getting Started
+A fast, mobile-friendly AI writing assistant powered by the Claude API. Type a prompt, press **Generate**, and the answer streams in live as rendered Markdown, with code highlighting, tables and math.
 
-First, run the development server:
+**Stack:** Next.js 16 (App Router) · Tailwind CSS v4 · [shadcn/ui](https://ui.shadcn.com) + [AI Elements](https://ai-sdk.dev/elements) · Vercel AI SDK `useChat` · [Streamdown](https://streamdown.ai) · official `@anthropic-ai/sdk`
+
+## Features
+
+- Streaming responses from Claude, rendered with Streamdown (Markdown, syntax-highlighted code, tables, math, Mermaid)
+- Chat-style conversation with multi-turn context, a typing indicator, stop, regenerate, copy, and auto-scroll with a "jump to bottom" button
+- Model picker (Opus 5.5, Sonnet 5.5, Haiku 5.5, Fable 5.1); your choice is remembered
+- API key popup: paste your key, it's checked against Anthropic, then saved in your browser only
+- Light and dark themes that follow your OS setting, and a responsive layout down to phone width
+
+## Rebranding
+
+- **Name and tagline:** `lib/brand.ts`
+- **Colors:** `--primary`, `--brand-from` and `--brand-to` in `app/globals.css` (light under `:root`, dark under `.dark`)
+- **Starter prompts:** `SUGGESTIONS` in `components/chat.tsx`
+
+## Run locally
+
+Requires Node 20+ and pnpm.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Where the API key goes
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+You have two options:
 
-## Learn More
+1. **In the app (default).** On first load a popup asks for your Anthropic API key (get one at https://console.anthropic.com/settings/keys). The key is saved in your browser's `localStorage` and sent with each request in an `x-anthropic-key` header. The server uses it for that one call and never stores or logs it. You can change or remove it any time with the **API key** button.
+2. **On the server.** Copy `.env.example` to `.env.local` and set `ANTHROPIC_API_KEY=sk-ant-...`. On Vercel, add it under *Project → Settings → Environment Variables* instead. When this is set, the popup no longer opens on its own (visitors can still use their own key).
 
-To learn more about Next.js, take a look at the following resources:
+## Deploy (Vercel)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+pnpm dlx vercel
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Or push to GitHub and import the repo at https://vercel.com/new. No other setup is needed; `ANTHROPIC_API_KEY` is optional (see above).
 
-## Deploy on Vercel
+## Project structure
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+app/
+  api/chat/route.ts     Calls Claude through the Anthropic SDK and returns an AI SDK UI message stream
+  api/verify/route.ts   Lightweight key check used by the popup
+  layout.tsx, page.tsx  Shell, fonts, theme
+components/
+  chat.tsx              Chat screen (useChat + AI Elements)
+  key-dialog.tsx        API key popup
+  model-picker.tsx      Model dropdown
+  ai-elements/, ui/     Generated shadcn / AI Elements components
+lib/
+  brand.ts              Product name and tagline
+  chat.ts               Model list, system prompt, storage keys
+  local-store.ts        Small localStorage-backed React store
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The server only accepts model IDs from the list in `lib/chat.ts`. Requests use `effort: "low"` for quick chat replies. On models that support it, a declined request is automatically retried on another model through server-side fallbacks.
