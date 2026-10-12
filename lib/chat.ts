@@ -43,3 +43,4 @@ export const SYSTEM_PROMPT =
 export const KEY_STORAGE = "anthropic-api-key";
 export const MODEL_STORAGE = "claude-model";
 export const THEME_STORAGE = "theme";
+export const HISTORY_STORAGE = "chat-history";

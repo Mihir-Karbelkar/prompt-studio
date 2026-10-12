@@ -8,6 +8,7 @@ A fast, mobile-friendly AI writing assistant powered by the Claude API. Type a p
 
 - Streaming responses from Claude, rendered with Streamdown (Markdown, syntax-highlighted code, tables, math, Mermaid)
 - Chat-style conversation with multi-turn context, a typing indicator, stop, regenerate, copy, and auto-scroll with a "jump to bottom" button
+- Chat history sidebar (hamburger menu): past conversations are saved in your browser, grouped by date, and can be reopened or deleted
 - Model picker (Opus 5.5, Sonnet 5.5, Haiku 5.5, Fable 5.1); your choice is remembered
 - API key popup: paste your key, it's checked against Anthropic, then saved in your browser only
 - Light and dark themes: follows your OS setting by default, with a toggle in the header that remembers your choice
@@ -54,12 +55,14 @@ app/
   layout.tsx, page.tsx  Shell, fonts, theme
 components/
   chat.tsx              Chat screen (useChat + AI Elements)
+  chat-sidebar.tsx      Chat history sidebar / mobile drawer
   key-dialog.tsx        API key popup
   model-picker.tsx      Model dropdown
   ai-elements/, ui/     Generated shadcn / AI Elements components
 lib/
   brand.ts              Product name and tagline
   chat.ts               Model list, system prompt, storage keys
+  chat-history.ts       Saved conversations (localStorage)
   local-store.ts        Small localStorage-backed React store
 ```
 
