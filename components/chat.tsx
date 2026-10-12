@@ -3,7 +3,21 @@
 import { useEffect, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { AlertCircle, Check, Copy, KeyRound, Menu, RotateCcw, Sparkles, Square, SquarePen } from "lucide-react";
+import {
+  AlertCircle,
+  CalendarDays,
+  Check,
+  Copy,
+  KeyRound,
+  Lightbulb,
+  Mail,
+  Megaphone,
+  Menu,
+  RotateCcw,
+  Sparkles,
+  Square,
+  SquarePen,
+} from "lucide-react";
 import {
   Conversation,
   ConversationContent,
@@ -23,7 +37,6 @@ import {
   PromptInputSubmit,
   PromptInputTextarea,
 } from "@/components/ai-elements/prompt-input";
-import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion";
 import { ChatSidebar } from "@/components/chat-sidebar";
 import { KeyDialog } from "@/components/key-dialog";
 import { ModelPicker } from "@/components/model-picker";
@@ -36,10 +49,10 @@ import { createLocalStore } from "@/lib/local-store";
 
 // Everyday small-business prompts: marketing copy, client emails, planning.
 const SUGGESTIONS = [
-  "Write 3 Instagram captions for a fitness studio",
-  "Draft a friendly follow-up email to a new client",
-  "Plan a week of social media posts",
-  "Brainstorm 10 names for a small business",
+  { icon: Megaphone, color: "text-pink-500", text: "Write 3 Instagram captions for a fitness studio" },
+  { icon: Mail, color: "text-sky-500", text: "Draft a friendly follow-up email to a new client" },
+  { icon: CalendarDays, color: "text-amber-500", text: "Plan a week of social media posts" },
+  { icon: Lightbulb, color: "text-emerald-500", text: "Brainstorm 10 names for a small business" },
 ];
 
 const keyStore = createLocalStore(KEY_STORAGE);
@@ -128,6 +141,46 @@ export function Chat({ hasServerKey }: { hasServerKey: boolean }) {
     else setMobileSidebar((o) => !o);
   };
 
+  const composer = (
+      <PromptInput
+        onSubmit={({ text }) => send(text)}
+        className="rounded-3xl bg-card shadow-soft *:data-[slot=input-group]:rounded-3xl"
+      >
+        <PromptInputBody>
+          <PromptInputTextarea
+            value={input}
+            onChange={(e) => setInput(e.currentTarget.value)}
+            placeholder="Describe what you want to generate…"
+            className="min-h-14 px-4 pt-3.5 text-base md:text-[15px]"
+          />
+        </PromptInputBody>
+        <PromptInputFooter className="px-2.5 pb-2.5">
+          <ModelPicker value={model} onChange={(id) => modelStore.set(id)} />
+          <PromptInputSubmit
+            status={status}
+            onStop={() => void stop()}
+            disabled={!busy && !input.trim()}
+            aria-label={busy ? "Stop generating" : "Generate"}
+            className={`ml-auto h-9 w-auto gap-1.5 rounded-full px-4 font-medium has-[>svg]:px-4 ${
+              busy
+                ? "bg-foreground text-background hover:bg-foreground/85"
+                : "bg-brand text-white shadow-soft hover:opacity-90"
+            }`}
+          >
+            {busy ? (
+              <>
+                <Square className="size-3 fill-current" /> Stop
+              </>
+            ) : (
+              <>
+                <Sparkles className="size-4" /> Generate
+              </>
+            )}
+          </PromptInputSubmit>
+        </PromptInputFooter>
+      </PromptInput>
+  );
+
   return (
     <div className="flex h-full">
       <ChatSidebar
@@ -189,14 +242,26 @@ export function Chat({ hasServerKey }: { hasServerKey: boolean }) {
         </header>
 
         {empty ? (
-          <main className="brand-glow flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-6 text-center">
-            <LogoMark className="animate-rise mb-5 size-12 rounded-2xl" />
-            <h1 className="animate-rise text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-              What do you want to create?
-            </h1>
-            <p className="animate-rise mt-3 max-w-md text-balance text-muted-foreground">
-              {BRAND.tagline}
-            </p>
+          <main className="brand-glow flex min-h-0 flex-1 flex-col overflow-y-auto px-3 sm:px-6">
+            <div className="mx-auto my-auto w-full max-w-3xl pt-6 pb-[12vh]">
+              <h1 className="animate-rise mb-7 text-center text-[28px] font-medium tracking-tight text-balance sm:text-3xl">
+                What do you want to create?
+              </h1>
+              <div className="animate-rise">{composer}</div>
+              <ul className="animate-rise mt-4 space-y-0.5" aria-label="Suggestions">
+                {SUGGESTIONS.map(({ icon: Icon, color, text }) => (
+                  <li key={text}>
+                    <button
+                      onClick={() => send(text)}
+                      className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-[15px] text-foreground/80 transition hover:bg-muted hover:text-foreground"
+                    >
+                      <Icon className={`size-[18px] shrink-0 ${color}`} />
+                      {text}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </main>
         ) : (
           <Conversation className="min-h-0">
@@ -278,63 +343,16 @@ export function Chat({ hasServerKey }: { hasServerKey: boolean }) {
           </Conversation>
         )}
 
-        <div className="shrink-0 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 sm:pb-5">
-          <div className="mx-auto max-w-3xl space-y-3">
-            {empty && (
-              <Suggestions className="mx-auto">
-                {SUGGESTIONS.map((s) => (
-                  <Suggestion
-                    key={s}
-                    suggestion={s}
-                    onClick={send}
-                    className="bg-card font-normal text-foreground/80 hover:border-primary/40 hover:text-primary"
-                  />
-                ))}
-              </Suggestions>
-            )}
-            <PromptInput
-              onSubmit={({ text }) => send(text)}
-              className="rounded-3xl bg-card shadow-soft *:data-[slot=input-group]:rounded-3xl"
-            >
-              <PromptInputBody>
-                <PromptInputTextarea
-                  value={input}
-                  onChange={(e) => setInput(e.currentTarget.value)}
-                  placeholder="Describe what you want to generate…"
-                  className="min-h-14 px-4 pt-3.5 text-base md:text-[15px]"
-                />
-              </PromptInputBody>
-              <PromptInputFooter className="px-2.5 pb-2.5">
-                <ModelPicker value={model} onChange={(id) => modelStore.set(id)} />
-                <PromptInputSubmit
-                  status={status}
-                  onStop={() => void stop()}
-                  disabled={!busy && !input.trim()}
-                  aria-label={busy ? "Stop generating" : "Generate"}
-                  className={`ml-auto h-9 w-auto gap-1.5 rounded-full px-4 font-medium has-[>svg]:px-4 ${
-                    busy
-                      ? "bg-foreground text-background hover:bg-foreground/85"
-                      : "bg-brand text-white shadow-soft hover:opacity-90"
-                  }`}
-                >
-                  {busy ? (
-                    <>
-                      <Square className="size-3 fill-current" /> Stop
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="size-4" /> Generate
-                    </>
-                  )}
-                </PromptInputSubmit>
-              </PromptInputFooter>
-            </PromptInput>
-            <p className="text-center text-[11px] text-muted-foreground">
-              AI responses can be inaccurate. Double-check important details.
-            </p>
+        {!empty && (
+          <div className="shrink-0 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 sm:pb-5">
+            <div className="mx-auto max-w-3xl space-y-2">
+              {composer}
+              <p className="text-center text-[11px] text-muted-foreground">
+                AI responses can be inaccurate. Double-check important details.
+              </p>
+            </div>
           </div>
-        </div>
-
+        )}
       </div>
 
       <KeyDialog

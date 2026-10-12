@@ -4,6 +4,5 @@
  */
 export const BRAND = {
   name: "Prompt Studio",
-  tagline: "Write a prompt, hit Generate, and watch the answer stream in.",
   description: "A fast, mobile-friendly AI writing assistant powered by Claude.",
 };

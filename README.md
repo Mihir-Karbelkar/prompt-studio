@@ -16,7 +16,7 @@ A fast, mobile-friendly AI writing assistant powered by the Claude API. Type a p
 
 ## Rebranding
 
-- **Name and tagline:** `lib/brand.ts`
+- **Name and description:** `lib/brand.ts`
 - **Colors:** `--primary`, `--brand-from` and `--brand-to` in `app/globals.css` (light under `:root`, dark under `.dark`)
 - **Starter prompts:** `SUGGESTIONS` in `components/chat.tsx`
 
@@ -60,7 +60,7 @@ components/
   model-picker.tsx      Model dropdown
   ai-elements/, ui/     Generated shadcn / AI Elements components
 lib/
-  brand.ts              Product name and tagline
+  brand.ts              Product name and description
   chat.ts               Model list, system prompt, storage keys
   chat-history.ts       Saved conversations (localStorage)
   local-store.ts        Small localStorage-backed React store
