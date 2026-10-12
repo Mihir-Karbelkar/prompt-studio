@@ -26,6 +26,7 @@ import {
 import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion";
 import { KeyDialog } from "@/components/key-dialog";
 import { ModelPicker } from "@/components/model-picker";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { DEFAULT_MODEL, KEY_STORAGE, MODEL_STORAGE, findModel } from "@/lib/chat";
 import { BRAND } from "@/lib/brand";
@@ -108,6 +109,7 @@ export function Chat({ hasServerKey }: { hasServerKey: boolean }) {
           <span className="text-[17px] font-semibold tracking-tight">{BRAND.name}</span>
         </div>
         <div className="flex items-center gap-1">
+          <ThemeToggle />
           {!empty && (
             <Button variant="ghost" onClick={newChat} className="text-muted-foreground">
               <SquarePen />

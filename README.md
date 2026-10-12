@@ -10,7 +10,8 @@ A fast, mobile-friendly AI writing assistant powered by the Claude API. Type a p
 - Chat-style conversation with multi-turn context, a typing indicator, stop, regenerate, copy, and auto-scroll with a "jump to bottom" button
 - Model picker (Opus 5.5, Sonnet 5.5, Haiku 5.5, Fable 5.1); your choice is remembered
 - API key popup: paste your key, it's checked against Anthropic, then saved in your browser only
-- Light and dark themes that follow your OS setting, and a responsive layout down to phone width
+- Light and dark themes: follows your OS setting by default, with a toggle in the header that remembers your choice
+- Responsive layout down to phone width
 
 ## Rebranding
 

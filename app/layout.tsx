@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BRAND } from "@/lib/brand";
+import { THEME_STORAGE } from "@/lib/chat";
 import "katex/dist/katex.min.css";
 import "streamdown/styles.css";
 import "./globals.css";
@@ -24,10 +25,15 @@ export const viewport: Viewport = {
   ],
 };
 
-// Mirror the OS color scheme onto `.dark` before paint (shadcn + Streamdown use the class).
+// Set `.dark` before paint (shadcn + Streamdown use the class): a saved choice from the
+// theme toggle wins, otherwise follow the OS preference.
 const themeScript = `(() => {
   const mq = matchMedia("(prefers-color-scheme: dark)");
-  const apply = () => document.documentElement.classList.toggle("dark", mq.matches);
+  const saved = () => { try { return localStorage.getItem("${THEME_STORAGE}"); } catch { return null; } };
+  const apply = () => {
+    const theme = saved();
+    document.documentElement.classList.toggle("dark", theme ? theme === "dark" : mq.matches);
+  };
   apply();
   mq.addEventListener("change", apply);
 })();`;
