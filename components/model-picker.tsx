@@ -27,7 +27,7 @@ export function ModelPicker({ value, onChange }: Props) {
         {current.name}
         <ChevronDown className="size-3.5 opacity-70" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent side="top" align="start" sideOffset={8} className="w-72 p-1.5 shadow-soft">
+      <DropdownMenuContent side="top" align="end" sideOffset={8} className="w-72 p-1.5 shadow-soft">
         {MODELS.map((m) => {
           const selected = m.id === current.id;
           return (

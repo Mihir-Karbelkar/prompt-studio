@@ -33,7 +33,6 @@ import {
 import {
   PromptInput,
   PromptInputBody,
-  PromptInputFooter,
   PromptInputSubmit,
   PromptInputTextarea,
 } from "@/components/ai-elements/prompt-input";
@@ -42,10 +41,13 @@ import { KeyDialog } from "@/components/key-dialog";
 import { ModelPicker } from "@/components/model-picker";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { InputGroupAddon } from "@/components/ui/input-group";
 import { DEFAULT_MODEL, KEY_STORAGE, MODEL_STORAGE, findModel } from "@/lib/chat";
 import { BRAND } from "@/lib/brand";
 import { deleteChat, getChat, saveChat, useChatHistory } from "@/lib/chat-history";
 import { createLocalStore } from "@/lib/local-store";
+import { cn } from "@/lib/utils";
+import { morph } from "@/lib/view-transition";
 
 // Everyday small-business prompts: marketing copy, client emails, planning.
 const SUGGESTIONS = [
@@ -108,10 +110,15 @@ export function Chat({ hasServerKey }: { hasServerKey: boolean }) {
     const content = text.trim();
     if (!content || busy) return;
     if (!keyStore.get() && !hasServerKey) return setManualOpen(true);
-    if (!activeId) setActiveId(crypto.randomUUID());
-    clearError();
-    void sendMessage({ text: content });
-    setInput("");
+    const start = () => {
+      if (!activeId) setActiveId(crypto.randomUUID());
+      clearError();
+      void sendMessage({ text: content });
+      setInput("");
+    };
+    // The first message morphs the slim start-screen box into the docked composer.
+    if (empty) morph(start);
+    else start();
   };
 
   const saveKey = (key: string | null) => {
@@ -123,10 +130,16 @@ export function Chat({ hasServerKey }: { hasServerKey: boolean }) {
   // Finish (and save) any in-flight reply before swapping conversations.
   const openChat = async (id: string | null) => {
     if (busy) await stop();
-    setMessages(id ? (getChat(id)?.messages ?? []) : []);
-    setActiveId(id);
-    clearError();
-    setMobileSidebar(false);
+    const next = id ? (getChat(id)?.messages ?? []) : [];
+    const update = () => {
+      setMessages(next);
+      setActiveId(id);
+      clearError();
+      setMobileSidebar(false);
+    };
+    // Animate only when the composer actually moves between the two layouts.
+    if (empty !== (next.length === 0)) morph(update);
+    else update();
   };
 
   const newChat = () => void openChat(null);
@@ -141,44 +154,64 @@ export function Chat({ hasServerKey }: { hasServerKey: boolean }) {
     else setMobileSidebar((o) => !o);
   };
 
+  // One composer element in both layouts (never remounted, so focus and text survive):
+  // a slim single row on the start screen, a taller box docked at the bottom in a chat.
+  const compact = empty;
   const composer = (
-      <PromptInput
-        onSubmit={({ text }) => send(text)}
-        className="rounded-3xl bg-card shadow-soft *:data-[slot=input-group]:rounded-3xl"
+    <PromptInput
+      onSubmit={({ text }) => send(text)}
+      style={{ viewTransitionName: "composer" }}
+      className={cn(
+        "bg-card shadow-soft *:data-[slot=input-group]:h-auto",
+        compact
+          ? "rounded-[28px] *:data-[slot=input-group]:rounded-[28px]"
+          : "rounded-3xl *:data-[slot=input-group]:rounded-3xl",
+      )}
+    >
+      <PromptInputBody>
+        <PromptInputTextarea
+          value={input}
+          onChange={(e) => setInput(e.currentTarget.value)}
+          placeholder={compact ? "Ask anything…" : "Describe what you want to generate…"}
+          className={cn(
+            "text-base md:text-[15px]",
+            compact ? "min-h-0 py-3.5 pl-5" : "min-h-16 px-5 pt-4",
+          )}
+        />
+      </PromptInputBody>
+      <InputGroupAddon
+        align={compact ? "inline-end" : "block-end"}
+        className={cn("gap-1", compact ? "self-end pr-2 pb-2" : "justify-end px-3 pb-3")}
       >
-        <PromptInputBody>
-          <PromptInputTextarea
-            value={input}
-            onChange={(e) => setInput(e.currentTarget.value)}
-            placeholder="Describe what you want to generate…"
-            className="min-h-14 px-4 pt-3.5 text-base md:text-[15px]"
-          />
-        </PromptInputBody>
-        <PromptInputFooter className="px-2.5 pb-2.5">
-          <ModelPicker value={model} onChange={(id) => modelStore.set(id)} />
-          <PromptInputSubmit
-            status={status}
-            onStop={() => void stop()}
-            disabled={!busy && !input.trim()}
-            aria-label={busy ? "Stop generating" : "Generate"}
-            className={`ml-auto h-9 w-auto gap-1.5 rounded-full px-4 font-medium has-[>svg]:px-4 ${
-              busy
-                ? "bg-foreground text-background hover:bg-foreground/85"
-                : "bg-brand text-white shadow-soft hover:opacity-90"
-            }`}
-          >
-            {busy ? (
-              <>
-                <Square className="size-3 fill-current" /> Stop
-              </>
-            ) : (
-              <>
-                <Sparkles className="size-4" /> Generate
-              </>
-            )}
-          </PromptInputSubmit>
-        </PromptInputFooter>
-      </PromptInput>
+        <ModelPicker value={model} onChange={(id) => modelStore.set(id)} />
+        <PromptInputSubmit
+          status={status}
+          onStop={() => void stop()}
+          disabled={!busy && !input.trim()}
+          aria-label={busy ? "Stop generating" : "Generate"}
+          className={cn(
+            "h-9 w-auto gap-1.5 rounded-full px-4 font-medium has-[>svg]:px-4",
+            // On phones the slim start-screen row is tight, so Generate becomes icon-only there.
+            compact && "max-sm:size-9 max-sm:px-0 max-sm:has-[>svg]:px-0",
+            busy
+              ? "bg-foreground text-background hover:bg-foreground/85"
+              : "bg-brand text-white shadow-soft hover:opacity-90",
+          )}
+        >
+          {busy ? (
+            <>
+              <Square className="size-3 fill-current" />
+              <span className={cn(compact && "max-sm:sr-only")}>Stop</span>
+            </>
+          ) : (
+            <>
+              <Sparkles className="size-4" />
+              <span className={cn(compact && "max-sm:sr-only")}>Generate</span>
+            </>
+          )}
+        </PromptInputSubmit>
+      </InputGroupAddon>
+    </PromptInput>
   );
 
   return (
@@ -242,27 +275,11 @@ export function Chat({ hasServerKey }: { hasServerKey: boolean }) {
         </header>
 
         {empty ? (
-          <main className="brand-glow flex min-h-0 flex-1 flex-col overflow-y-auto px-3 sm:px-6">
-            <div className="mx-auto my-auto w-full max-w-3xl pt-6 pb-[12vh]">
-              <h1 className="animate-rise mb-7 text-center text-[28px] font-medium tracking-tight text-balance sm:text-3xl">
-                What do you want to create?
-              </h1>
-              <div className="animate-rise">{composer}</div>
-              <ul className="animate-rise mt-4 space-y-0.5" aria-label="Suggestions">
-                {SUGGESTIONS.map(({ icon: Icon, color, text }) => (
-                  <li key={text}>
-                    <button
-                      onClick={() => send(text)}
-                      className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-[15px] text-foreground/80 transition hover:bg-muted hover:text-foreground"
-                    >
-                      <Icon className={`size-[18px] shrink-0 ${color}`} />
-                      {text}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </main>
+          <div className="brand-glow flex min-h-0 flex-1 flex-col justify-end px-3 sm:px-6">
+            <h1 className="animate-rise mb-7 text-center text-[28px] font-medium tracking-tight text-balance sm:text-3xl">
+              What do you want to create?
+            </h1>
+          </div>
         ) : (
           <Conversation className="min-h-0">
             <ConversationContent className="mx-auto w-full max-w-3xl gap-7 px-4 pt-4 pb-10 sm:px-6">
@@ -343,14 +360,37 @@ export function Chat({ hasServerKey }: { hasServerKey: boolean }) {
           </Conversation>
         )}
 
-        {!empty && (
-          <div className="shrink-0 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 sm:pb-5">
-            <div className="mx-auto max-w-3xl space-y-2">
-              {composer}
-              <p className="text-center text-[11px] text-muted-foreground">
+        <div
+          className={cn(
+            "shrink-0 px-3 sm:px-6",
+            !empty && "pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-5",
+          )}
+        >
+          <div className="mx-auto max-w-3xl">
+            {!empty && (
+              <p className="mb-2 text-center text-[11px] text-muted-foreground">
                 AI responses can be inaccurate. Double-check important details.
               </p>
-            </div>
+            )}
+            {composer}
+          </div>
+        </div>
+
+        {empty && (
+          <div className="min-h-0 flex-[1.3] overflow-y-auto px-3 sm:px-6">
+            <ul className="animate-rise mx-auto mt-4 max-w-3xl space-y-0.5" aria-label="Suggestions">
+              {SUGGESTIONS.map(({ icon: Icon, color, text }) => (
+                <li key={text}>
+                  <button
+                    onClick={() => send(text)}
+                    className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-[15px] text-foreground/80 transition hover:bg-muted hover:text-foreground"
+                  >
+                    <Icon className={`size-[18px] shrink-0 ${color}`} />
+                    {text}
+                  </button>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </div>

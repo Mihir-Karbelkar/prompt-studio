@@ -149,6 +149,30 @@
   background-image: linear-gradient(135deg, var(--brand-from), var(--brand-to));
 }
 
+/* Composer morph between the start screen and a conversation (see lib/view-transition.ts). */
+::view-transition-group(composer) {
+  animation-duration: 480ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+::view-transition-image-pair(composer) {
+  overflow: clip;
+  border-radius: 1.5rem;
+}
+/* Keep snapshots unscaled and top-anchored so text doesn't stretch while the box grows. */
+::view-transition-old(composer),
+::view-transition-new(composer) {
+  height: 100%;
+  object-fit: none;
+  object-position: top;
+}
+/* Fade the old controls out quickly so the two layouts never overlap visibly. */
+::view-transition-old(composer) {
+  animation-duration: 140ms;
+}
+::view-transition-new(composer) {
+  animation-duration: 320ms;
+}
+
 /* Soft brand glow behind the empty state. */
 .brand-glow {
   background:
